@@ -1,0 +1,19 @@
+node_modules/
+.env
+.env.*
+.DS_Store
+dist/
+build/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDEs
+.vscode/
+.idea/
+.vs/
