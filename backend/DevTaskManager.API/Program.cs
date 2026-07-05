@@ -4,7 +4,9 @@ using DevTaskManager.API.Middleware;
 using DevTaskManager.Application.Interfaces;
 using DevTaskManager.Application.Mappings;
 using DevTaskManager.Application.Services;
+using DevTaskManager.Application.Strategies;
 using DevTaskManager.Application.Validators;
+using DevTaskManager.Domain.Interfaces;
 using DevTaskManager.Infrastructure.Data;
 using DevTaskManager.Infrastructure.Repositories;
 using FluentValidation;
@@ -24,7 +26,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 // 2. Repositories
-builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped(typeof(DevTaskManager.Domain.Interfaces.IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<IDeveloperRepository, DeveloperRepository>();
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<DeveloperRepository>();
 builder.Services.AddScoped<ProjectRepository>();
 builder.Services.AddScoped<TaskRepository>();
@@ -34,6 +39,12 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDeveloperService, DeveloperService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// Strategy Pattern for Tasks
+builder.Services.AddScoped<ITaskStatusTransitionStrategy, MarkAsDoneStrategy>();
+builder.Services.AddScoped<ITaskStatusTransitionStrategy, DefaultStatusTransitionStrategy>();
+builder.Services.AddScoped<TaskStatusTransitionContext>();
 
 // 4. AutoMapper
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));

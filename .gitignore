@@ -17,3 +17,8 @@ obj/
 .vscode/
 .idea/
 .vs/
+
+# Archivos y carpetas ignoradas localmente
+manual_pdf/
+MANUAL_INSTALACION.md
+README.md

@@ -1,12 +1,18 @@
 using DevTaskManager.Domain.Entities;
 using DevTaskManager.Domain.Enums;
+using DevTaskManager.Domain.Interfaces;
 using DevTaskManager.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using TaskStatus = DevTaskManager.Domain.Enums.TaskStatus;
 
 namespace DevTaskManager.Infrastructure.Repositories;
 
-public class TaskRepository : Repository<TaskItem>
+/// <summary>
+/// PATRÓN REPOSITORY — Implementación concreta del repositorio de tareas.
+/// SOLID - DIP: Implementa ITaskRepository (definida en Domain), permitiendo que TaskService dependa
+///              de la interfaz y no de esta clase concreta.
+/// </summary>
+public class TaskRepository : Repository<TaskItem>, ITaskRepository
 {
     public TaskRepository(ApplicationDbContext context) : base(context) { }
 

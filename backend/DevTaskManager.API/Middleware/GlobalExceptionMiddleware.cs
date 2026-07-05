@@ -1,8 +1,12 @@
 using System.Net;
 using System.Text.Json;
+using DevTaskManager.Domain.Exceptions;
 
 namespace DevTaskManager.API.Middleware;
 
+/// <summary>
+/// Middleware de manejo global de excepciones.
+/// </summary>
 public class GlobalExceptionMiddleware
 {
     private readonly RequestDelegate _next;
@@ -22,7 +26,7 @@ public class GlobalExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception has occurred.");
+            _logger.LogError(ex, "An unhandled exception has occurred: {Message}", ex.Message);
             await HandleExceptionAsync(context, ex);
         }
     }
@@ -30,24 +34,20 @@ public class GlobalExceptionMiddleware
     private static Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
-        
-        var response = new { message = exception.Message };
-        
-        // Basic distinction between validation errors (400) and server errors (500)
-        // In a real app we might check for specific exception types (e.g. ValidationException)
-        if (exception.Message.Contains("inválid") || exception.Message.Contains("registrad") || exception.Message.Contains("en uso"))
+        var (statusCode, message, errors) = exception switch
         {
-            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-        }
-        else if (exception.Message.Contains("no encontrad"))
-        {
-            context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-        }
-        else
-        {
-            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-            response = new { message = "An internal server error occurred." };
-        }
+            NotFoundException ex       => (HttpStatusCode.NotFound,           ex.Message, (IReadOnlyList<string>?)null),
+            BusinessValidationException ex => (HttpStatusCode.BadRequest,     ex.Message, ex.Errors),
+            UnauthorizedException ex   => (HttpStatusCode.Unauthorized,       ex.Message, null),
+            _                          => (HttpStatusCode.InternalServerError, "Ocurrió un error interno en el servidor.", null)
+        };
+
+        // Log detallado solo para errores 500
+        context.Response.StatusCode = (int)statusCode;
+
+        object response = errors != null
+            ? new { message, errors }
+            : new { message };
 
         return context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }

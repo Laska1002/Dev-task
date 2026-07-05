@@ -1,11 +1,17 @@
 using DevTaskManager.Domain.Entities;
 using DevTaskManager.Domain.Enums;
+using DevTaskManager.Domain.Interfaces;
 using DevTaskManager.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace DevTaskManager.Infrastructure.Repositories;
 
-public class ProjectRepository : Repository<Project>
+/// <summary>
+/// PATRÓN REPOSITORY — Implementación concreta del repositorio de proyectos.
+/// SOLID - DIP: Implementa IProjectRepository (definida en Domain), permitiendo que ProjectService dependa
+///              de la interfaz y no de esta clase concreta.
+/// </summary>
+public class ProjectRepository : Repository<Project>, IProjectRepository
 {
     public ProjectRepository(ApplicationDbContext context) : base(context) { }
 

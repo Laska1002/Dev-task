@@ -1,23 +1,31 @@
 using AutoMapper;
 using DevTaskManager.Application.DTOs.Task;
 using DevTaskManager.Application.Interfaces;
+using DevTaskManager.Application.Strategies;
 using DevTaskManager.Domain.Entities;
-using DevTaskManager.Infrastructure.Repositories;
+using DevTaskManager.Domain.Exceptions;
+using DevTaskManager.Domain.Interfaces;
 using TaskStatus = DevTaskManager.Domain.Enums.TaskStatus;
 
 namespace DevTaskManager.Application.Services;
 
 public class TaskService : ITaskService
 {
-    private readonly TaskRepository _taskRepository;
+    private readonly ITaskRepository _taskRepository;
     private readonly IRepository<TaskComment> _commentRepository;
     private readonly IMapper _mapper;
+    private readonly TaskStatusTransitionContext _transitionContext;
 
-    public TaskService(TaskRepository taskRepository, IRepository<TaskComment> commentRepository, IMapper mapper)
+    public TaskService(
+        ITaskRepository taskRepository,
+        IRepository<TaskComment> commentRepository,
+        IMapper mapper,
+        TaskStatusTransitionContext transitionContext)
     {
         _taskRepository = taskRepository;
         _commentRepository = commentRepository;
         _mapper = mapper;
+        _transitionContext = transitionContext;
     }
 
     public async Task<(IEnumerable<TaskResponseDto> Items, int Total)> GetPagedAsync(
@@ -54,17 +62,16 @@ public class TaskService : ITaskService
 
     public async Task<TaskResponseDto> UpdateAsync(uint id, UpdateTaskDto dto)
     {
-        var task = await _taskRepository.GetByIdAsync(id);
-        if (task == null)
-            throw new Exception("Task no encontrada.");
+        var task = await _taskRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Task", id);
 
+        var previousStatus = task.Status;
         _mapper.Map(dto, task);
-        task.UpdatedAt = DateTime.UtcNow;
 
-        if (task.Status == TaskStatus.Done && task.CompletedAt == null)
-            task.CompletedAt = DateTime.UtcNow;
-        else if (task.Status != TaskStatus.Done)
-            task.CompletedAt = null;
+        if (task.Status != previousStatus)
+            _transitionContext.ApplyTransition(task, task.Status);
+        else
+            task.UpdatedAt = DateTime.UtcNow;
 
         await _taskRepository.UpdateAsync(task);
 
@@ -74,18 +81,14 @@ public class TaskService : ITaskService
 
     public async Task PatchStatusAsync(uint id, string status)
     {
-        var task = await _taskRepository.GetByIdAsync(id);
-        if (task == null)
-            throw new Exception("Task no encontrada.");
+        var task = await _taskRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Task", id);
 
-        var newStatus = status == "in_progress" ? TaskStatus.InProgress : Enum.Parse<TaskStatus>(status, true);
-        task.Status = newStatus;
-        task.UpdatedAt = DateTime.UtcNow;
+        var newStatus = status == "in_progress"
+            ? TaskStatus.InProgress
+            : Enum.Parse<TaskStatus>(status, true);
 
-        if (task.Status == TaskStatus.Done && task.CompletedAt == null)
-            task.CompletedAt = DateTime.UtcNow;
-        else if (task.Status != TaskStatus.Done)
-            task.CompletedAt = null;
+        _transitionContext.ApplyTransition(task, newStatus);
 
         await _taskRepository.UpdateAsync(task);
     }
@@ -107,8 +110,8 @@ public class TaskService : ITaskService
 
     public async Task<CommentResponseDto> AddCommentAsync(uint taskId, CreateCommentDto dto, uint userId)
     {
-        var task = await _taskRepository.GetByIdAsync(taskId);
-        if (task == null) throw new Exception("Task no encontrada.");
+        var task = await _taskRepository.GetByIdAsync(taskId)
+            ?? throw new NotFoundException("Task", taskId);
 
         var comment = new TaskComment
         {

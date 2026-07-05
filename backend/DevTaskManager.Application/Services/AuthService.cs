@@ -5,7 +5,8 @@ using DevTaskManager.Application.DTOs.Auth;
 using DevTaskManager.Application.Interfaces;
 using DevTaskManager.Domain.Entities;
 using DevTaskManager.Domain.Enums;
-using DevTaskManager.Infrastructure.Repositories;
+using DevTaskManager.Domain.Exceptions;
+using DevTaskManager.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 

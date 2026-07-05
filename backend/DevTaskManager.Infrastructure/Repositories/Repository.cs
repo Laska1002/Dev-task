@@ -1,9 +1,15 @@
 using System.Linq.Expressions;
+using DevTaskManager.Domain.Interfaces;
 using DevTaskManager.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace DevTaskManager.Infrastructure.Repositories;
 
+/// <summary>
+/// Implementación base genérica del patrón Repository.
+/// SOLID - DIP: Implementa IRepository&lt;T&gt; definida en Domain.Interfaces,
+///              por lo que los consumidores (servicios) dependen de la abstracción.
+/// </summary>
 public class Repository<T> : IRepository<T> where T : class
 {
     protected readonly ApplicationDbContext _context;

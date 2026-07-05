@@ -2,18 +2,19 @@ using AutoMapper;
 using DevTaskManager.Application.DTOs.Project;
 using DevTaskManager.Application.Interfaces;
 using DevTaskManager.Domain.Entities;
-using DevTaskManager.Infrastructure.Repositories;
+using DevTaskManager.Domain.Exceptions;
+using DevTaskManager.Domain.Interfaces;
 
 namespace DevTaskManager.Application.Services;
 
 public class ProjectService : IProjectService
 {
-    private readonly ProjectRepository _projectRepository;
+    private readonly IProjectRepository _projectRepository;
     private readonly IRepository<ProjectDeveloper> _projectDeveloperRepository;
     private readonly IMapper _mapper;
 
     public ProjectService(
-        ProjectRepository projectRepository, 
+        IProjectRepository projectRepository,
         IRepository<ProjectDeveloper> projectDeveloperRepository,
         IMapper mapper)
     {
@@ -56,9 +57,8 @@ public class ProjectService : IProjectService
 
     public async Task<ProjectResponseDto> UpdateAsync(uint id, UpdateProjectDto dto)
     {
-        var project = await _projectRepository.GetByIdAsync(id);
-        if (project == null)
-            throw new Exception("Proyecto no encontrado.");
+        var project = await _projectRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Proyecto", id);
 
         _mapper.Map(dto, project);
         project.UpdatedAt = DateTime.UtcNow;
@@ -80,8 +80,8 @@ public class ProjectService : IProjectService
 
     public async Task AssignDevelopersAsync(uint projectId, AssignDevelopersDto dto)
     {
-        var project = await _projectRepository.GetByIdAsync(projectId);
-        if (project == null) throw new Exception("Proyecto no encontrado.");
+        var project = await _projectRepository.GetByIdAsync(projectId)
+            ?? throw new NotFoundException("Proyecto", projectId);
 
         foreach (var devId in dto.DeveloperIds)
         {
@@ -111,11 +111,6 @@ public class ProjectService : IProjectService
 
     public async Task<IEnumerable<ProjectDeveloperDto>> GetDevelopersAsync(uint projectId)
     {
-        var pds = await _projectDeveloperRepository.FindAsync(pd => pd.ProjectId == projectId);
-        // The repository FindAsync won't include Developer automatically unless we configure it or use ProjectRepository
-        var devs = await _projectRepository.GetDevelopersAsync(projectId);
-        
-        // This is a bit simplified; ideally we return ProjectDeveloperDto mapped from ProjectDeveloper with includes
         var project = await _projectRepository.GetByIdWithDetailsAsync(projectId);
         if (project == null) return new List<ProjectDeveloperDto>();
         

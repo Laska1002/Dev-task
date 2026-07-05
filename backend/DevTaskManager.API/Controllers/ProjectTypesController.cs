@@ -1,5 +1,5 @@
 using DevTaskManager.Domain.Entities;
-using DevTaskManager.Infrastructure.Repositories;
+using DevTaskManager.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

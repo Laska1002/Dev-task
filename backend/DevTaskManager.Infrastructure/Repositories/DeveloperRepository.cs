@@ -1,11 +1,17 @@
 using DevTaskManager.Domain.Entities;
 using DevTaskManager.Domain.Enums;
+using DevTaskManager.Domain.Interfaces;
 using DevTaskManager.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace DevTaskManager.Infrastructure.Repositories;
 
-public class DeveloperRepository : Repository<Developer>
+/// <summary>
+/// PATRÓN REPOSITORY — Implementación concreta del repositorio de desarrolladores.
+/// SOLID - DIP: Implementa IDeveloperRepository (definida en Domain), permitiendo que DeveloperService dependa
+///              de la interfaz y no de esta clase concreta.
+/// </summary>
+public class DeveloperRepository : Repository<Developer>, IDeveloperRepository
 {
     public DeveloperRepository(ApplicationDbContext context) : base(context) { }
 
